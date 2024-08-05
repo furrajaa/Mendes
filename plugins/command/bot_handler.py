@@ -1,10 +1,13 @@
 import re
-import config
+import config  # Import config module for notification settings
+
 from pyrogram import Client, enums, types
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import (
+    Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+)
 from plugins import Database
 
-async def send_notification(client: Client, text: str):
+async def send_notification(client, text):
     """Function to send notification to config.channel_1"""
     try:
         await client.send_message(config.channel_1, text)
@@ -47,8 +50,11 @@ async def setting_handler(client: Client, msg: types.Message):
     """Send bot settings to user with inline buttons to change settings"""
     db = Database(msg.from_user.id).get_data_bot(client.id_bot)
     
-    def status_text(active: bool) -> str:
+    def status_text(active):
         return "AKTIF" if active else "TIDAK AKTIF"
+    
+    def button_text(active):
+        return "✅" if active else "❌"
     
     pesan = (
         "<b>💌 Menfess User\n\n✅ = AKTIF\n❌ = TIDAK AKTIF</b>\n"
@@ -68,12 +74,15 @@ async def setting_handler(client: Client, msg: types.Message):
     
     await msg.reply(pesan, quote=True, parse_mode=enums.ParseMode.HTML, reply_markup=markup)
 
-async def update_message(client: Client, msg: types.Message, db: Database):
+async def update_message(client, msg: types.Message, db: Database):
     """Update message with current settings"""
     db_data = db.get_data_bot(client.id_bot)
     
-    def status_text(active: bool) -> str:
+    def status_text(active):
         return "AKTIF" if active else "TIDAK AKTIF"
+    
+    def button_text(active):
+        return "✅" if active else "❌"
     
     pesan = (
         "<b>💌 Menfess User\n\n✅ = AKTIF\n❌ = TIDAK AKTIF</b>\n"
@@ -97,17 +106,19 @@ async def handle_inline_query(client: Client, query: CallbackQuery, type_: str):
     """Handle inline queries for changing settings"""
     msg = query.message
     db = Database(query.from_user.id)
-    current_status = msg.reply_markup.inline_keyboard[int(type_[-1])][0].text
-
-    if current_status in ['✅', '❌']:
-        handler_map = {
-            'photo': db.photo_handler,
-            'video': db.video_handler,
-            'voice': db.voice_handler
-        }
-        await handler_map[type_](current_status, client.id_bot)
-        
-        await update_message(client, msg, db)
+    callback_data = query.data
+    
+    if callback_data not in ['✅', '❌']:
+        return
+    
+    handler_map = {
+        'photo': db.photo_handler,
+        'video': db.video_handler,
+        'voice': db.voice_handler
+    }
+    
+    await handler_map[type_](callback_data, client.id_bot)
+    await update_message(client, msg, db)
 
 async def photo_handler_inline(client: Client, query: CallbackQuery):
     await handle_inline_query(client, query, 'photo')
@@ -122,7 +133,7 @@ async def status_handler_inline(client: Client, query: CallbackQuery):
     """Handle status button clicks"""
     msg = query.message
     db = Database(query.from_user.id)
-    current_status = msg.reply_markup.inline_keyboard[3][0].text
-    new_status = 'off' if current_status == 'AKTIF' else 'on'
+    callback_data = query.data
+    new_status = 'off' if callback_data == 'AKTIF' else 'on'
     await db.bot_handler(new_status)
     await update_message(client, msg, db)
