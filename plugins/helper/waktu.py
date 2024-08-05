@@ -1,13 +1,18 @@
 import json
 
-class Waktu():
-    def __init__(self, json):
-        self.json = json
-        self.hari = json['hari']
-        self.tanggal = json['tanggal']
-        self.bulan = json['bulan']
-        self.tahun = json['tahun']
-        self.jam = json['jam']
-        self.full_time = json['full']
+class Waktu:
+    def __init__(self, data):
+        self.data = data
+        self.hari = data.get('hari')
+        self.tanggal = data.get('tanggal')
+        self.bulan = data.get('bulan')
+        self.tahun = data.get('tahun')
+        self.jam = data.get('jam')
+        self.full_time = data.get('full')
+
     def __str__(self) -> str:
-        return str(json.dumps(self.json, indent=3))
+        return (f"Hari: {self.hari}, Tanggal: {self.tanggal}, Bulan: {self.bulan}, "
+                f"Tahun: {self.tahun}, Jam: {self.jam}, Full Time: {self.full_time}")
+
+waktu = Waktu(data)
+print(waktu)
