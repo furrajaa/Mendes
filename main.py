@@ -18,9 +18,14 @@ async def main():
     await bot.start()
     
     try:
+        print("Bot is running. Press Ctrl+C to exit.")
         await asyncio.Event().wait()
     except (KeyboardInterrupt, SystemExit):
+        print("Stopping bot...")
         await bot.stop()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"An error occurred: {e}")
