@@ -3,29 +3,23 @@ import config
 import pytz
 import pyrogram
 from pyrogram.errors import UserNotParticipant
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, Update
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import enums, Client
 from datetime import datetime
 from ..database import Database
 from .waktu import Waktu
 
 
-class Helper():
+class Helper:
     def __init__(self, bot: Client, message: Message):
         self.bot = bot
-        self.client = bot  
         self.message = message
-        self.msg = message
         self.user_id = message.from_user.id
         self.first = message.from_user.first_name
         self.last = message.from_user.last_name
         self.fullname = f'{self.first} {self.last}' if self.last else self.first
         self.premium = message.from_user.is_premium
-        self.username = (
-            f'@{self.message.from_user.username}'
-            if self.message.from_user.username
-            else "-"
-        )
+        self.username = f'@{self.message.from_user.username}' if self.message.from_user.username else "-"
         self.mention = self.message.from_user.mention
         
     async def estimate_message(self, image):
@@ -33,12 +27,14 @@ class Helper():
         image.save(img_byte_arr, format='PNG')
         img_byte_arr.seek(0)
 
-        file_id = await self.client.send_photo(chat_id=self.msg.chat.id, photo=img_byte_arr)
-
-        file_link = f'tg://openmessage?user_id={self.msg.from_user.id}&message_id={file_id}'
-        message_text = f'<a href="{file_link}">&#8203;</a>'
-
-        return message_text
+        try:
+            file_message = await self.bot.send_photo(chat_id=self.message.chat.id, photo=img_byte_arr)
+            file_link = f'tg://openmessage?user_id={self.user_id}&message_id={file_message.message_id}'
+            message_text = f'<a href="{file_link}">&#8203;</a>'
+            return message_text
+        except Exception as e:
+            print(f"Error sending photo: {e}")
+            return ""
 
     async def escapeHTML(self, text: str):
         if text is None:
@@ -49,11 +45,8 @@ class Helper():
         if user_id == config.id_admin:
             return True
         try:
-            member = await self.bot.get_chat_member(config.channel_1, user_id)
-        except UserNotParticipant:
-            return False
-        try:
-            member = await self.bot.get_chat_member(config.channel_2, user_id)
+            member_1 = await self.bot.get_chat_member(config.channel_1, user_id)
+            member_2 = await self.bot.get_chat_member(config.channel_2, user_id)
         except UserNotParticipant:
             return False
 
@@ -62,11 +55,16 @@ class Helper():
             enums.ChatMemberStatus.MEMBER,
             enums.ChatMemberStatus.ADMINISTRATOR
         ]
-        return member.status in status
+        return member_1.status in status and member_2.status in status
 
     async def pesan_langganan(self):
-        link_1 = await self.bot.export_chat_invite_link(config.channel_1)
-        link_2 = await self.bot.export_chat_invite_link(config.channel_2)
+        try:
+            link_1 = await self.bot.export_chat_invite_link(config.channel_1)
+            link_2 = await self.bot.export_chat_invite_link(config.channel_2)
+        except Exception as e:
+            print(f"Error exporting chat invite link: {e}")
+            link_1 = link_2 = "#"
+
         markup = InlineKeyboardMarkup([
             [InlineKeyboardButton('Channel base', url=link_1), InlineKeyboardButton('Group base', url=link_2)],
             [InlineKeyboardButton('Coba lagi', url=f'https://t.me/{self.bot.username}?start=start')]
@@ -75,20 +73,14 @@ class Helper():
 
     async def daftar_pelanggan(self):
         database = Database(self.user_id)
+        nama = await self.escapeHTML(self.fullname)
+        status = 'owner' if self.user_id == config.id_admin else 'member'
+        coin = f"9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999_{self.user_id}" if self.user_id == config.id_admin else f"0_{self.user_id}"
 
-        nama = self.fullname
-
-        status = 'member'
-        coin = f"0_{str(self.user_id)}"
-        if self.user_id == config.id_admin:
-            status = 'owner'
-            coin = f"9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999_{str(self.user_id)}"
-
-        nama = await self.escapeHTML(nama)
         data = {
             '_id': self.user_id,
             'nama': nama,
-            'status': f"{status}_{str(self.user_id)}",
+            'status': f"{status}_{self.user_id}",
             'coin': coin,
             'menfess': 0,
             'all_menfess': 0,
@@ -98,25 +90,26 @@ class Helper():
 
     async def send_to_channel_log(self, type: str = None, link: str = None):
         if type == 'log_channel':
-            pesan = "INFO MESSAGE 💌\n"
-            pesan += f"├ Nama -: <b>{await self.escapeHTML(self.fullname)}</b>\n"
-            pesan += f"├ ID -: <code>{self.user_id}</code>\n"
-            pesan += f"├ Username -: {self.username}\n"
-            pesan += f"├ Mention -: {self.mention}\n"
-            pesan += f"├ Kirim pesan -: <a href='tg://openmessage?user_id={self.user_id}'>{await self.escapeHTML(self.fullname)}</a>\n"
-            pesan += f"├ Cek Pesan : {link}\n"
-            pesan += f"└ Waktu -: {self.get_time().full_time}"
+            pesan = ("INFO MESSAGE 💌\n"
+                     f"├ Nama -: <b>{await self.escapeHTML(self.fullname)}</b>\n"
+                     f"├ ID -: <code>{self.user_id}</code>\n"
+                     f"├ Username -: {self.username}\n"
+                     f"├ Mention -: {self.mention}\n"
+                     f"├ Kirim pesan -: <a href='tg://openmessage?user_id={self.user_id}'>{await self.escapeHTML(self.fullname)}</a>\n"
+                     f"├ Cek Pesan : {link}\n"
+                     f"└ Waktu -: {self.get_time().full_time}")
         elif type == 'log_daftar':
-            pesan = "<b>📊DATA USER BERHASIL DITAMBAHKAN DIDATABASE</b>\n"
-            pesan += f"├ Nama -: <b>{await self.escapeHTML(self.fullname)}</b>\n"
-            pesan += f"├ ID -: <code>{self.user_id}</code>\n"
-            pesan += f"├ Username -: {self.username}\n"
-            pesan += f"├ Mention -: {self.mention}\n"
-            pesan += f"├ Kirim pesan -: <a href='tg://openmessage?user_id={self.user_id}'>{await self.escapeHTML(self.fullname)}</a>\n"
-            pesan += f"└ Telegram Premium -: {'✅' if self.premium else '❌'}"
+            pesan = ("<b>📊DATA USER BERHASIL DITAMBAHKAN DIDATABASE</b>\n"
+                     f"├ Nama -: <b>{await self.escapeHTML(self.fullname)}</b>\n"
+                     f"├ ID -: <code>{self.user_id}</code>\n"
+                     f"├ Username -: {self.username}\n"
+                     f"├ Mention -: {self.mention}\n"
+                     f"├ Kirim pesan -: <a href='tg://openmessage?user_id={self.user_id}'>{await self.escapeHTML(self.fullname)}</a>\n"
+                     f"└ Telegram Premium -: {'✅' if self.premium else '❌'}")
         else:
             pesan = "Jangan Lupa main bot @chatjomblohalu_bot"
-        await self.bot.send_message(config.channel_log, pesan, enums.ParseMode.HTML, disable_web_page_preview=True)
+        
+        await self.bot.send_message(config.channel_log, pesan, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
 
     def formatrupiah(self, uang):
         y = str(uang)
