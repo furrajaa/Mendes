@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from pyrogram import Client
 from pyrogram.types import (
@@ -9,25 +10,28 @@ from pyrogram.errors import (
 )
 from plugins import Database
 
+logging.basicConfig(level=logging.INFO)
+
 async def broadcast_handler(client: Client, msg: Message):
     if msg.reply_to_message is None:
         await msg.reply('Harap reply sebuah pesan', True)
-
     else:
         anu = msg.reply_to_message
         anu = await anu.copy(msg.chat.id, reply_to_message_id=anu.id)
         markup = InlineKeyboardMarkup([
             [InlineKeyboardButton('Ya', 'ya_confirm'), InlineKeyboardButton('Tidak', 'tidak_confirm')]
         ])
-        await anu.reply('apakah kamu akan mengirimkan pesan broadcast ?', True, reply_markup=markup)
+        await anu.reply('Apakah kamu akan mengirimkan pesan broadcast?', True, reply_markup=markup)
 
 async def broadcast_ya(client: Client, query: CallbackQuery):
     msg = query.message
     db = Database(msg.from_user.id)
+    
     if not msg.reply_to_message:
         await query.answer('Pesan tidak ditemukan', True)
         await query.message.delete()
         return
+
     message = msg.reply_to_message
     user_ids = db.get_pelanggan().id_pelanggan
 
@@ -35,15 +39,21 @@ async def broadcast_ya(client: Client, query: CallbackQuery):
     dihapus = 0
     blokir = 0
     gagal = 0
-    await msg.edit('Broadcast sedang berlangsung, tunggu sebentar', reply_markup = None)
+    
+    await msg.edit('Broadcast sedang berlangsung, tunggu sebentar', reply_markup=None)
+    
     for user_id in user_ids:
         try:
             await message.copy(user_id)
             berhasil += 1
         except FloodWait as e:
+            logging.info(f'FloodWait: Menunggu {e.x} detik sebelum melanjutkan.')
             await asyncio.sleep(e.x)
-            await message.copy(user_id)
-            berhasil += 1
+            try:
+                await message.copy(user_id)
+                berhasil += 1
+            except Exception as ex:
+                logging.error(f'Error saat mencoba mengirim ulang: {ex}')
         except UserIsBlocked:
             blokir += 1
         except PeerIdInvalid:
@@ -51,6 +61,9 @@ async def broadcast_ya(client: Client, query: CallbackQuery):
         except InputUserDeactivated:
             dihapus += 1
             await db.hapus_pelanggan(user_id)
+        except Exception as ex:
+            logging.error(f'Error tidak terduga: {ex}')
+    
     text = f"""<b>Broadcast selesai</b>
     
 Jumlah pengguna: {len(user_ids)}
@@ -66,9 +79,10 @@ Gagal terkirim: {str(gagal)}"""
 async def close_cbb(client: Client, query: CallbackQuery):
     try:
         await query.message.reply_to_message.delete()
-    except:
-        pass
+    except Exception as ex:
+        logging.error(f'Error saat menghapus pesan balasan: {ex}')
+    
     try:
         await query.message.delete()
-    except:
-        pass
+    except Exception as ex:
+        logging.error(f'Error saat menghapus pesan: {ex}')
