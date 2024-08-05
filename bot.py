@@ -17,12 +17,17 @@ class Bot(Client):
             },
             bot_token=config.bot_token
         )
+    
     async def start(self):
         await super().start()
         bot_me = await self.get_me()
 
         db = Database(bot_me.id)
-        os.system('cls')
+        if os.name == 'nt':  # Windows
+            os.system('cls')
+        else:  # Unix/Linux/Mac
+            os.system('clear')
+        
         if not await db.cek_user_didatabase():
             print('[!] Menambahkan data bot ke database...')
             await db.tambah_databot()
@@ -30,38 +35,28 @@ class Bot(Client):
         print(f"[!] Link Database Kamu : {config.db_url}")
         print("================")
 
-        if config.channel_1:
-            try:
-                await self.export_chat_invite_link(config.channel_1)
-            except:
-                print(f'Harap periksa kembali ID [ {config.channel_1} ] pada channel 1')
-                print('Pastikan bot telah dimasukan kedalam channel dan menjadi admin')
-                print('-> Bot terpaksa dihentikan')
-                sys.exit()
-        if config.channel_2:
-            try:
-                await self.export_chat_invite_link(config.channel_1)
-            except:
-                print(f'Harap periksa kembali ID [ {config.channel_2} ] pada channel 2')
-                print('Pastikan bot telah dimasukan kedalam channel dan menjadi admin')
-                print('-> Bot terpaksa dihentikan')
-                sys.exit()
-        if config.channel_log:
-            try:
-                await self.export_chat_invite_link(config.channel_log)
-            except:
-                print(f'Harap periksa kembali ID [ {config.channel_log} ] pada channel log')
-                print('Pastikan bot telah dimasukan kedalam channel dan menjadi admin')
-                print('-> Bot terpaksa dihentikan')
-                sys.exit()
-
+        channels = [config.channel_1, config.channel_2, config.channel_log]
+        for idx, channel in enumerate(channels, 1):
+            if channel:
+                try:
+                    await self.export_chat_invite_link(channel)
+                except Exception as e:
+                    print(f'Harap periksa kembali ID [ {channel} ] pada channel {idx}')
+                    print(f'Error: {str(e)}')
+                    print('Pastikan bot telah dimasukan kedalam channel dan menjadi admin')
+                    print('-> Bot terpaksa dihentikan')
+                    sys.exit()
+        
         self.username = bot_me.username
         self.id_bot = bot_me.id
         data.append(self.id_bot)
         await self.set_bot_commands([
-            BotCommand('status', '🍃 check status'), BotCommand('talent', '👙 talent konten / vcs'),
-            BotCommand('daddysugar', '👔 daddy sugar trusted'), BotCommand('moansgirl', '🧘‍♀️ moans girl'),
-            BotCommand('moansboy', '🧘 moans boy'), BotCommand('gfrent', '🤵 girl friend rent'),
+            BotCommand('status', '🍃 check status'), 
+            BotCommand('talent', '👙 talent konten / vcs'),
+            BotCommand('daddysugar', '👔 daddy sugar trusted'), 
+            BotCommand('moansgirl', '🧘‍♀️ moans girl'),
+            BotCommand('moansboy', '🧘 moans boy'), 
+            BotCommand('gfrent', '🤵 girl friend rent'),
             BotCommand('bfrent', '🤵 boy friend rent')
         ], BotCommandScopeAllPrivateChats())
 
@@ -77,6 +72,20 @@ class Bot(Client):
         pesan += f'➜ <i>Total user yang mengirim menfess hari ini adalah {x}/{db.total_pelanggan} user</i>\n'
         pesan += '➜ <i>Berhasil direset menjadi 0 menfess</i>'
         url = f'https://api.telegram.org/bot{config.bot_token}'
-        a = requests.get(f'{url}/sendMessage?chat_id={config.channel_log}&text={pesan}&parse_mode=HTML').json()
-        requests.post(f'{url}/pinChatMessage?chat_id={config.channel_log}&message_id={a["result"]["message_id"]}&parse_mode=HTML')
-        requests.post(f'{url}/deleteMessage?chat_id={config.channel_log}&message_id={a["result"]["message_id"] + 1}&parse_mode=HTML')
+        try:
+            response = requests.get(f'{url}/sendMessage', params={
+                'chat_id': config.channel_log,
+                'text': pesan,
+                'parse_mode': 'HTML'
+            }).json()
+            message_id = response['result']['message_id']
+            requests.post(f'{url}/pinChatMessage', params={
+                'chat_id': config.channel_log,
+                'message_id': message_id
+            })
+            requests.post(f'{url}/deleteMessage', params={
+                'chat_id': config.channel_log,
+                'message_id': message_id + 1
+            })
+        except requests.RequestException as e:
+            print(f'Error saat mengirim pesan: {str(e)}')
