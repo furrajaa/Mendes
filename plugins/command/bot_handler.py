@@ -1,13 +1,10 @@
 import re
-import config  # Import config module for notification settings
-
+import config
 from pyrogram import Client, enums, types
-from pyrogram.types import (
-    Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-)
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from plugins import Database
 
-async def send_notification(client, text):
+async def send_notification(client: Client, text: str):
     """Function to send notification to config.channel_1"""
     try:
         await client.send_message(config.channel_1, text)
@@ -50,11 +47,8 @@ async def setting_handler(client: Client, msg: types.Message):
     """Send bot settings to user with inline buttons to change settings"""
     db = Database(msg.from_user.id).get_data_bot(client.id_bot)
     
-    def status_text(active):
+    def status_text(active: bool) -> str:
         return "AKTIF" if active else "TIDAK AKTIF"
-    
-    def button_text(active):
-        return "✅" if active else "❌"
     
     pesan = (
         "<b>💌 Menfess User\n\n✅ = AKTIF\n❌ = TIDAK AKTIF</b>\n"
@@ -74,15 +68,12 @@ async def setting_handler(client: Client, msg: types.Message):
     
     await msg.reply(pesan, quote=True, parse_mode=enums.ParseMode.HTML, reply_markup=markup)
 
-async def update_message(client, msg: types.Message, db: Database):
+async def update_message(client: Client, msg: types.Message, db: Database):
     """Update message with current settings"""
     db_data = db.get_data_bot(client.id_bot)
     
-    def status_text(active):
+    def status_text(active: bool) -> str:
         return "AKTIF" if active else "TIDAK AKTIF"
-    
-    def button_text(active):
-        return "✅" if active else "❌"
     
     pesan = (
         "<b>💌 Menfess User\n\n✅ = AKTIF\n❌ = TIDAK AKTIF</b>\n"
@@ -106,7 +97,7 @@ async def handle_inline_query(client: Client, query: CallbackQuery, type_: str):
     """Handle inline queries for changing settings"""
     msg = query.message
     db = Database(query.from_user.id)
-    current_status = msg.reply_markup.inline_keyboard[int(type_[-1])][1].text
+    current_status = msg.reply_markup.inline_keyboard[int(type_[-1])][0].text
 
     if current_status in ['✅', '❌']:
         handler_map = {
