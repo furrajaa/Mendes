@@ -22,7 +22,7 @@ async def send_with_pic_handler(client: Client, msg: types.Message, key: str, ha
                 coin -= config.biaya_kirim
             else:
                 return await msg.reply(
-                    f'🙅🏻‍♀️ Post gagal terkirim. Kamu hari ini telah mengirim {menfess}/{config.batas_kirim} kali. Coin mu kurang untuk mengirim menfess di luar batas harian. Kamu dapat mengirim menfess kembali pada hari esok. Waktu reset jam 1 pagi.\n\nInfo: Topup Coin Hanya ke @OwnNeko',
+                    f'🙅🏻‍♀️ Post gagal terkirim. Kamu hari ini telah mengirim {menfess}/{config.batas_kirim} kali. Coin mu kurang untuk mengirim menfess di luar batas harian. Kamu dapat mengirim menfess kembali pada hari esok. Waktu reset jam 1 pagi.\n\nInfo: Topup Coin Hanya ke @kucingssbaikss',
                     quote=True
                 )
         
@@ -53,7 +53,7 @@ async def send_with_pic_handler(client: Client, msg: types.Message, key: str, ha
         await helper.send_to_channel_log(type="log_channel", link=link + str(kirim.id))
         await db.update_menfess(coin, menfess, all_menfess)
         await msg.reply(
-            f"Pesan telah berhasil terkirim. Hari ini kamu telah mengirim menfess sebanyak {menfess + 1}/{config.batas_kirim}. Kamu dapat mengirim menfess sebanyak {config.batas_kirim} kali dalam sehari.\n\nWaktu reset setiap jam 1 pagi.\n<a href='{link + str(kirim.id)}'>Check pesan kamu</a>.\n\nInfo: Topup Coin Hanya ke @OwnNeko"
+            f"Pesan telah berhasil terkirim. Hari ini kamu telah mengirim menfess sebanyak {menfess + 1}/{config.batas_kirim}. Kamu dapat mengirim menfess sebanyak {config.batas_kirim} kali dalam sehari.\n\nWaktu reset setiap jam 1 pagi.\n<a href='{link + str(kirim.id)}'>Check pesan kamu</a>.\n\nInfo: Topup Coin Hanya ke @kucingssbaikss"
         )
     else:
         await msg.reply('Media yang didukung: photo, video, dan voice.')
@@ -84,7 +84,7 @@ async def send_menfess_handler(client: Client, msg: types.Message):
                 coin -= config.biaya_kirim
             else:
                 return await msg.reply(
-                    f'🙅🏻‍♀️ Post gagal terkirim. Kamu hari ini telah mengirim {menfess}/{config.batas_kirim} kali. Coin mu kurang untuk mengirim menfess di luar batas harian. Kamu dapat mengirim menfess kembali pada hari esok. Waktu reset jam 1 pagi.\n\nInfo: Topup Coin Hanya ke @OwnNeko',
+                    f'🙅🏻‍♀️ Post gagal terkirim. Kamu hari ini telah mengirim {menfess}/{config.batas_kirim} kali. Coin mu kurang untuk mengirim menfess di luar batas harian. Kamu dapat mengirim menfess kembali pada hari esok. Waktu reset jam 1 pagi.\n\nInfo: Topup Coin Hanya ke @kucingssbaikss',
                     quote=True
                 )
 
